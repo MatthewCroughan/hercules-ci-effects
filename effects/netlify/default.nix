@@ -8,21 +8,22 @@ args@{ content
 , secretField ? "token"
 , siteId
 , productionDeployment ? false
+, secretsMap ? {}
 , ...
 }:
 let
   deployArgs = [
     "--dir=${content}"
     "--site=${siteId}"
+    "--json"
   ] ++ lib.optionals productionDeployment [ "--prod" ];
 in
 mkEffect (args // {
   inputs = [ netlify-cli ];
-  secretsMap."netlify" = secretName;
+  secretsMap = secretsMap // { "netlify" = secretName; };
   effectScript = ''
     netlify deploy \
-      --json \
       --auth=$(readSecretString netlify .${secretField}) \
-      ${lib.escapeShellArgs deployArgs}
+      ${lib.escapeShellArgs deployArgs} | tee out
   '';
 })
